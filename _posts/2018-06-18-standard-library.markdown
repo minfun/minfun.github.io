@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Standard Library"
-date:   2018-09-16 11:11:00 +0800
+date:   2018-06-18 19:13:21 +0800
 categories: scala tutorial
 ---
 

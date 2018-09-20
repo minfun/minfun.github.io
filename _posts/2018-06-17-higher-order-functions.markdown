@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Higher order functions"
-date:   2018-09-15 12:56:00 +0800
+date:   2018-06-17 19:56:18 +0800
 categories: scala tutorial
 ---
 
