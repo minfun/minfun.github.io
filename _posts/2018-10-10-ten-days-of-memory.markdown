@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ---
 layout: post
 title:  "Ten Days of Memory With Love"
