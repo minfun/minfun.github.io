@@ -16,6 +16,5 @@ Begin to translate Scala Tutorial and Functional Programming
 
 [FP in Scala][fp_in_scala]
 
-[github_minfun]: https://github.com/minfun/scala
 [scala_tutorial]: https://www.scala-exercises.org/scala_tutorial/
 [fp_in_scala]: https://www.scala-exercises.org/fp_in_scala/
