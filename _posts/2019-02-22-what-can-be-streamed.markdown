@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Whay can be Streamed"
+title:  "What can be Streamed"
 date:   2019-02-22 11:20:13 +0800
 categories: apache flink
 ---
