@@ -73,7 +73,9 @@ public class Example {
 List<Person> people = new ArrayList<Person>();
 
 people.add(new Person("Fred", 35));
+
 people.add(new Person("Wilma", 35));
+
 people.add(new Person("Pebbles", 2));
 
 DataStream<Person> flintstones = env.fromCollection(people);
@@ -101,6 +103,7 @@ DataStream<String> lines = env.readTextFile("file:///path")
 
 {% highlight java %}
 1> Fred: age 35
+
 2> Wilma: age 35
 {% endhighlight %}
 
