@@ -7,7 +7,7 @@ categories: python performance
 
 ## 来自生产实践中的一次性能提升
 
-## 问题描述：在生产环境中，某个任务的生成过程特别漫长，并导致生产上数据的延迟，因此需要调研并定位问题。
+问题描述：在生产环境中，某个任务的生成过程特别漫长，并导致生产上数据的延迟，因此需要调研并定位问题。
 
 需要从一下几个方面开始调研：
 
@@ -31,8 +31,8 @@ categories: python performance
 对于第一点简单的解决方案就是减少依赖，降低celery worker运行时加载的代码量，这一部分成功释放了一部分内存，本文的重点是对于第二点的优化。
 
 可以想想这几个问题：
-这个业务单个进程消耗900M内存，为什么这个进程消耗的内存这么大？
-运行时间漫长无比，作为一个触发器任务运行时间将近一个小时，为什么这么慢？
+- 这个业务单个进程消耗900M内存，为什么这个进程消耗的内存这么大？
+- 运行时间漫长无比，作为一个触发器任务运行时间将近一个小时，为什么这么慢？
 那么，有方法降低和减小内存的使用吗？
 
 首先是增加日志，日志方便获取更多的信息，然后根据这些信息定位问题。在逐行日志的帮助下，分析出程序运行特别慢的地方。
@@ -59,10 +59,10 @@ logger.info('End Load')
 现在来计算一下这段代码的时间复杂度：
 来自官网的set操作时间复杂度表
 ![python-set-time-complexity](/assets/image/python/performance/python-set-time-complexity.jpg)
-优化前的时间复杂度：
-(0+k)+(k+k)+...+(nk)=k(1+n)/2*n ~ O(kn*n)
 
-问题显而易见，那么就可以开始优化了，优化之后的代码看起来非常简单：
+优化前的时间复杂度：`(0+k)+(k+k)+...+(nk)=k(1+n)/2*n ~ O(kn*n)`
+
+问题显而易见，优化之后的代码看起来非常简单：
 
 {% highlight python %}
 logger.info('Generate data')
@@ -82,9 +82,10 @@ unique_ids = set(unique_ids)
 logger.info('End Load')
 {% endhighlight %}
 
+来自官网的list操作时间复杂度表
 ![python-list-time-complexity](/assets/image/python/performance/python-list-time-complexity.jpg)
-优化后的时间复杂度：
-k+k+...+k=nk ~ O(kn)
+
+优化后的时间复杂度：`k+k+...+k=nk ~ O(kn)`
 
 O(n)的时间复杂度对比O(n*n)的时间复杂度，时间上的损耗减小了很多，足以达到期望的水平。
 
@@ -115,9 +116,78 @@ print t_end - t_begin
 {% endhighlight %}
 
 当lens分别为1000，2000，3000，4000，5000的时候，
-优化后的方式带来的时间开销小于1秒：
+优化后的方式带来的时间开销小于1秒，并且呈线性增长：
+
 ![python-performance-refactor-new-way](/assets/image/python/performance/python-performance-refactor-new-way.jpg)
 
-优化前的方式带来的时间开销远大于优化前：
+优化前的方式带来的时间开销远大于优化前，并且呈指数增长：
 ![python-performance-refactor-old-way](/assets/image/python/performance/python-performance-refactor-old-way.jpg)
+
+以上是通过查表获得的时间复杂度信息，也可以通过分析字节码来计算时间复杂度。
+
+比较这两段代码的字节码：
+
+优化后的程序字节码：
+{% highlight python %}
+ 21           0 LOAD_GLOBAL              0 (generate_list)
+              3 CALL_FUNCTION            0
+              6 STORE_FAST               0 (l)
+
+ 22           9 BUILD_LIST               0
+             12 STORE_FAST               1 (c)
+
+ 23          15 SETUP_LOOP              27 (to 45)
+             18 LOAD_FAST                0 (l)
+             21 GET_ITER
+        >>   22 FOR_ITER                19 (to 44)
+             25 STORE_FAST               2 (x)
+
+ 24          28 LOAD_FAST                1 (c)
+             31 LOAD_ATTR                1 (extend)
+             34 LOAD_FAST                2 (x)
+             37 CALL_FUNCTION            1
+             40 POP_TOP
+             41 JUMP_ABSOLUTE           22
+        >>   44 POP_BLOCK
+
+ 25     >>   45 LOAD_GLOBAL              2 (set)
+             48 LOAD_FAST                1 (c)
+             51 CALL_FUNCTION            1
+             54 STORE_FAST               3 (d)
+
+ 26          57 LOAD_FAST                3 (d)
+             60 RETURN_VALUE
+{% endhighlight %}
+
+优化前的程序字节码：
+
+{% highlight python %}
+ 30           0 LOAD_GLOBAL              0 (generate_list)
+              3 CALL_FUNCTION            0
+              6 STORE_FAST               0 (l)
+
+ 31           9 LOAD_GLOBAL              1 (set)
+             12 CALL_FUNCTION            0
+             15 STORE_FAST               1 (c)
+
+ 32          18 SETUP_LOOP              30 (to 51)
+             21 LOAD_FAST                0 (l)
+             24 GET_ITER
+        >>   25 FOR_ITER                22 (to 50)
+             28 STORE_FAST               2 (x)
+
+ 33          31 LOAD_FAST                1 (c)
+             34 LOAD_GLOBAL              1 (set)
+             37 LOAD_FAST                2 (x)
+             40 CALL_FUNCTION            1
+             43 BINARY_OR
+             44 STORE_FAST               1 (c)
+             47 JUMP_ABSOLUTE           25
+        >>   50 POP_BLOCK
+
+ 34     >>   51 LOAD_FAST                1 (c)
+             54 RETURN_VALUE
+{% endhighlight %}
+
+两段字节码的不同之处在于 `CALL_FUNCTION` 和 `JUMP_ABSOLUTE` 之间，优化后是 `POP_TOP` ，优化前是 `BINARY_OR` 和 `STORE_FAST`，前者时间复杂度为O(1)，后者为O(n)。
 

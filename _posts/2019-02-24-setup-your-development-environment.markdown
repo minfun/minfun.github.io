@@ -22,7 +22,7 @@ Flink支持Linux，OS X和Windows作为Flink程序和本地执行的开发环境
 
 `flink-training-exercises`项目包含编程练习，测试和参考解决方案以及大量示例。从Github克隆`flink-training-exercises`项目并建立：
 
-{% hightlight shell %}
+{% highlight shell %}
 git clone https://github.com/dataArtisans/flink-training-exercises.git
 cd flink-training-exercises
 mvn clean package
